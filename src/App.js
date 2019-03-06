@@ -4,7 +4,8 @@ import './App.css';
 
 const API_KEY = "430711e29ad09c493dad2831eb0bbd08"
 
-// http://ws.audioscrobbler.com/2.0/?method=artist.search&artist=chief%20keef&api_key=430711e29ad09c493dad2831eb0bbd08&format=json&limit=10
+// http://ws.audioscrobbler.com/2.0/?method=artist.search&artist=chief%20keef&
+// api_key=430711e29ad09c493dad2831eb0bbd08&format=json&limit=10
 class App extends Component {
   constructor(props) {
     super(props)
@@ -13,42 +14,47 @@ class App extends Component {
       searchResults: [],
     }
     this.updateSearchQuery = this.updateSearchQuery.bind(this)
-  }
-
-  componentDidMount() {
-    // this.fetchResults()
+    this.timeout = null
   }
 
   fetchResults() {
-    // validate input better.
-    if (!this.state.searchQuery) {
+    if (!this.state.searchQuery.replace(/\s/g, '').length) {
       this.setState({ searchResults: [] })
       return
     }
 
-    const self = this
+    const searchQuery = this.state.searchQuery
 
     $.ajax({
       type: 'GET',
-      url: `http://ws.audioscrobbler.com/2.0`,
+      url: "http://ws.audioscrobbler.com/2.0",
       data: {
         method: "artist.search",
-        artist: this.state.searchQuery,
+        artist: searchQuery,
         format: "json",
         limit: 10,
         api_key: API_KEY
       }
-    }).then((res) => {
-      self.setState({ searchResults: [...res.results.artistmatches.artist] })
-    }).fail((res) => {
-      console.log(res)
-      alert(res)
-    })
+    }).done(function(res) {
+      if (searchQuery === this.state.searchQuery) {
+        this.setState({ searchResults: res.results.artistmatches.artist })
+      }
+    }.bind(this)
+    ).fail(function(res) {
+      if (searchQuery === this.state.searchQuery) {
+        alert("bad request!")
+      }
+    }.bind(this))
   }
 
   updateSearchQuery(e) {
     this.setState({ searchQuery: e.target.value }, () => {
-      this.fetchResults()
+      if (this.timeout) {
+        clearTimeout(this.timeout)
+      }
+      this.timeout = setTimeout(() => {
+        this.fetchResults()
+      }, 100)
     })
   }
 
@@ -61,18 +67,19 @@ class App extends Component {
           value={this.state.searchQuery}
           onChange={this.updateSearchQuery}
         />
-        {this.state.searchResults.map(result => {
-          return (
-            <div>
+        {
+          this.state.searchResults.map(result => {
+            return (
               <div>
-                {result.name}
+                <div>
+                  {result.name}
+                </div>
               </div>
-            </div>
-          )
-        })
+            )
+          })
         }
       </div>
-    );
+    )
   }
 }
 
